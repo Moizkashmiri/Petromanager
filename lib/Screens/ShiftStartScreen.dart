@@ -19,42 +19,33 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
+  // Selected nozzle
+  String? _selectedNozzle;
+  final List<String> _nozzleOptions = [
+    'Pump 1 - Nozzle A',
+    'Pump 1 - Nozzle B',
+    'Pump 2 - Nozzle A',
+    'Pump 2 - Nozzle B',
+  ];
+
   late AnimationController _animationController;
   late AnimationController _cardAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _scaleAnimation;
 
-  // Form Controllers for Tank Levels
   final TextEditingController _petrolTankController = TextEditingController();
   final TextEditingController _dieselTankController = TextEditingController();
 
-  // Form Controllers for Cash
   final TextEditingController _cashController = TextEditingController();
 
-  // Form Controllers for Rates
   final TextEditingController _petrolRateController = TextEditingController();
   final TextEditingController _dieselRateController = TextEditingController();
 
-  // Form Controllers for Digital Readings
-  final TextEditingController _pump1Nozzle1aController =
-      TextEditingController();
-  final TextEditingController _pump1Nozzle1bController =
-      TextEditingController();
-  final TextEditingController _pump2Nozzle2aController =
-      TextEditingController();
-  final TextEditingController _pump2Nozzle2bController =
-      TextEditingController();
-
-  // Form Controllers for Analogue Readings
-  final TextEditingController _analoguePump1Nozzle1aController =
-      TextEditingController();
-  final TextEditingController _analoguePump1Nozzle1bController =
-      TextEditingController();
-  final TextEditingController _analoguePump2Nozzle2aController =
-      TextEditingController();
-  final TextEditingController _analoguePump2Nozzle2bController =
-      TextEditingController();
+  final TextEditingController _digitalReadingController =
+  TextEditingController();
+  final TextEditingController _analogueReadingController =
+  TextEditingController();
 
   @override
   void initState() {
@@ -65,7 +56,6 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
 
   Future<void> _pickImage() async {
     if (_selectedImage != null) {
-      // Show confirmation dialog to replace existing image
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -153,17 +143,36 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
     _cashController.text = '';
     _petrolRateController.text = '';
     _dieselRateController.text = '';
-    _pump1Nozzle1aController.text = '';
-    _pump1Nozzle1bController.text = '';
-    _pump2Nozzle2aController.text = '';
-    _pump2Nozzle2bController.text = '';
-    _analoguePump1Nozzle1aController.text = '';
-    _analoguePump1Nozzle1bController.text = '';
-    _analoguePump2Nozzle2aController.text = '';
-    _analoguePump2Nozzle2bController.text = '';
+    _digitalReadingController.text = '';
+    _analogueReadingController.text = '';
+  }
+
+  bool _isFormValid() {
+    return _selectedNozzle != null &&
+        _petrolRateController.text.isNotEmpty &&
+        _dieselRateController.text.isNotEmpty &&
+        _petrolTankController.text.isNotEmpty &&
+        _dieselTankController.text.isNotEmpty &&
+        _cashController.text.isNotEmpty &&
+        _digitalReadingController.text.isNotEmpty &&
+        _analogueReadingController.text.isNotEmpty;
   }
 
   Future<void> _submitForm() async {
+    if (!_isFormValid()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please fill all required fields and select a nozzle'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -178,7 +187,7 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Shift details saved successfully!'),
+        content: Text('Shift details saved successfully for $_selectedNozzle!'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -186,6 +195,21 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
         ),
       ),
     );
+  }
+
+  Color _getNozzleColor(String nozzle) {
+    switch (nozzle) {
+      case 'Pump 1 - Nozzle A':
+        return Colors.purple;
+      case 'Pump 1 - Nozzle B':
+        return Colors.purple.shade700;
+      case 'Pump 2 - Nozzle A':
+        return Colors.teal;
+      case 'Pump 2 - Nozzle B':
+        return Colors.teal.shade700;
+      default:
+        return Colors.grey;
+    }
   }
 
   @override
@@ -237,9 +261,13 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
                         child: Column(
                           children: [
                             SizedBox(height: 20.h),
-                            _buildFormSection(),
+                            _buildNozzleSelectionCard(),
                             SizedBox(height: 24.h),
-                            _buildSubmitButton(),
+                            if (_selectedNozzle != null) ...[
+                              _buildFormSection(),
+                              SizedBox(height: 24.h),
+                              _buildSubmitButton(),
+                            ],
                             SizedBox(height: 20.h),
                           ],
                         ),
@@ -285,7 +313,7 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
           ),
           SizedBox(width: 16.w),
           Text(
-            'Shift Details',
+            'Start Your Shift',
             style: TextStyle(
               fontSize: 24.sp,
               fontWeight: FontWeight.w800,
@@ -294,6 +322,185 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNozzleSelectionCard() {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.white.withOpacity(0.95)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.15),
+              offset: Offset(0, 12.h),
+              blurRadius: 30.r,
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              offset: Offset(0, 4.h),
+              blurRadius: 15.r,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Icon(Icons.settings, color: AppColors.primary, size: 20.sp),
+                ),
+                SizedBox(width: 12.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select Your Nozzle',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Choose the nozzle you will be operating',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 20.h),
+
+            // Nozzle Selection Grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12.w,
+                mainAxisSpacing: 12.h,
+                childAspectRatio: 2.5,
+              ),
+              itemCount: _nozzleOptions.length,
+              itemBuilder: (context, index) {
+                final nozzle = _nozzleOptions[index];
+                final isSelected = _selectedNozzle == nozzle;
+                final nozzleColor = _getNozzleColor(nozzle);
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedNozzle = nozzle;
+                      // Clear previous readings when switching nozzles
+                      _digitalReadingController.clear();
+                      _analogueReadingController.clear();
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? nozzleColor.withOpacity(0.1)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isSelected
+                            ? nozzleColor
+                            : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: isSelected ? [
+                        BoxShadow(
+                          color: nozzleColor.withOpacity(0.2),
+                          offset: Offset(0, 4.h),
+                          blurRadius: 12.r,
+                        ),
+                      ] : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                          color: isSelected ? nozzleColor : Colors.grey.shade500,
+                          size: 20.sp,
+                        ),
+                        SizedBox(height: 6.h),
+                        Text(
+                          nozzle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                            color: isSelected ? nozzleColor : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            if (_selectedNozzle != null) ...[
+              SizedBox(height: 16.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: _getNozzleColor(_selectedNozzle!).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: _getNozzleColor(_selectedNozzle!).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: _getNozzleColor(_selectedNozzle!),
+                      size: 18.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'Selected: $_selectedNozzle',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: _getNozzleColor(_selectedNozzle!),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -331,7 +538,7 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Opening (Start of the Shift)',
+              'Shift Opening Details',
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w700,
@@ -384,6 +591,7 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
                   suffix: 'Liters',
                   icon: Icons.local_gas_station_outlined,
                   color: Colors.green,
+                  keyboardType: TextInputType.number,
                 ),
                 SizedBox(height: 16.h),
                 _buildInputField(
@@ -393,6 +601,7 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
                   suffix: 'Liters',
                   icon: Icons.local_gas_station,
                   color: Colors.orange,
+                  keyboardType: TextInputType.number,
                 ),
               ],
             ),
@@ -418,104 +627,42 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
 
             SizedBox(height: 24.h),
 
-            // Meter Readings Section
+            // Selected Nozzle Readings Section
             _buildSectionCard(
-              title: 'Digital Meter Readings',
+              title: '$_selectedNozzle Readings',
               icon: Icons.speed,
-              subtitle: 'Record current digital readings',
+              subtitle: 'Record readings for your selected nozzle',
               children: [
                 _buildInputField(
-                  controller: _pump1Nozzle1aController,
-                  label: 'Pump 1 - Nozzle A',
+                  controller: _digitalReadingController,
+                  label: 'Digital Reading',
                   hint: '0.00',
                   suffix: 'L',
                   icon: Icons.speed,
-                  color: Colors.purple,
+                  color: _getNozzleColor(_selectedNozzle!),
+                  keyboardType: TextInputType.number,
                 ),
                 SizedBox(height: 16.h),
                 _buildInputField(
-                  controller: _pump1Nozzle1bController,
-                  label: 'Pump 1 - Nozzle B',
-                  hint: '0.00',
-                  suffix: 'L',
-                  icon: Icons.speed,
-                  color: Colors.purple,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _pump2Nozzle2aController,
-                  label: 'Pump 2 - Nozzle A',
-                  hint: '0.00',
-                  suffix: 'L',
-                  icon: Icons.speed,
-                  color: Colors.teal,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _pump2Nozzle2bController,
-                  label: 'Pump 2 - Nozzle B',
-                  hint: '0.00',
-                  suffix: 'L',
-                  icon: Icons.speed,
-                  color: Colors.teal,
+                  controller: _analogueReadingController,
+                  label: 'Analogue Reading',
+                  hint: '0.0',
+                  suffix: 'V',
+                  icon: Icons.analytics_outlined,
+                  color: _getNozzleColor(_selectedNozzle!),
+                  keyboardType: TextInputType.number,
                 ),
               ],
             ),
 
             SizedBox(height: 24.h),
 
-            // Analogue Readings Section
+            // Image Upload Section
             _buildSectionCard(
-              title: 'Analogue Meter Readings',
-              icon: Icons.analytics,
-              subtitle: 'Record current analogue readings',
-              children: [
-                _buildInputField(
-                  controller: _analoguePump1Nozzle1aController,
-                  label: 'Pump 1 - Nozzle A',
-                  hint: '0.0',
-                  suffix: 'V',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.red,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _analoguePump1Nozzle1bController,
-                  label: 'Pump 1 - Nozzle B',
-                  hint: '0.0',
-                  suffix: 'V',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.red,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _analoguePump2Nozzle2aController,
-                  label: 'Pump 2 - Nozzle A',
-                  hint: '0.0',
-                  suffix: 'V',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.indigo,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _analoguePump2Nozzle2bController,
-                  label: 'Pump 2 - Nozzle B',
-                  hint: '0.0',
-                  suffix: 'V',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.indigo,
-                ),
-
-                SizedBox(height: 24.h),
-
-                // Image Upload Section
-                _buildSectionCard(
-                  title: 'Shift Summary Photo',
-                  icon: Icons.camera_alt,
-                  subtitle: 'Upload one photo of shift summary (optional)',
-                  children: [_buildImageUploadSection()],
-                ),
-              ],
+              title: 'Shift Summary Photo',
+              icon: Icons.camera_alt,
+              subtitle: 'Upload one photo of shift summary (optional)',
+              children: [_buildImageUploadSection()],
             ),
           ],
         ),
@@ -817,46 +964,46 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
             alignment: Alignment.center,
             child: _isLoading
                 ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20.w,
-                        height: 20.h,
-                        child: const CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Text(
-                        'Saving...',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.save_outlined,
-                        color: Colors.white,
-                        size: 24.sp,
-                      ),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'Save Shift Details',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 20.w,
+                  height: 20.h,
+                  child: const CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
                   ),
+                ),
+                SizedBox(width: 12.w),
+                Text(
+                  'Saving...',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            )
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.save_outlined,
+                  color: Colors.white,
+                  size: 24.sp,
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  'Start Shift for $_selectedNozzle',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -874,15 +1021,8 @@ class _ShiftStartScreenState extends State<ShiftStartScreen>
     _cashController.dispose();
     _petrolRateController.dispose();
     _dieselRateController.dispose();
-    _pump1Nozzle1aController.dispose();
-    _pump1Nozzle1bController.dispose();
-    _pump2Nozzle2aController.dispose();
-    _pump2Nozzle2bController.dispose();
-    _analoguePump1Nozzle1aController.dispose();
-    _analoguePump1Nozzle1bController.dispose();
-    _analoguePump2Nozzle2aController.dispose();
-    _analoguePump2Nozzle2bController.dispose();
+    _digitalReadingController.dispose();
+    _analogueReadingController.dispose();
 
     super.dispose();
-  }
-}
+  }}
