@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuleflowpro/utils/AppColors.dart';
+import 'package:provider/provider.dart';
 
+import 'Providers/LoginProvider.dart';
+import 'SplashScreen.dart';
 import 'auth/LoginScreen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => LoginProvider())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -24,7 +32,7 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
           ),
-          home: LoginScreen(),
+          home: SplashScreen(),
         );
       },
     );

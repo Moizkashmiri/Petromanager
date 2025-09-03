@@ -18,6 +18,15 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
+  // Selected nozzle
+  String? _selectedNozzle;
+  final List<String> _nozzleOptions = [
+    'Pump 1 - Nozzle A',
+    'Pump 1 - Nozzle B',
+    'Pump 2 - Nozzle A',
+    'Pump 2 - Nozzle B',
+  ];
+
   late AnimationController _animationController;
   late AnimationController _cardAnimationController;
   late Animation<double> _fadeAnimation;
@@ -29,37 +38,34 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     'petrolTank': 10000,
     'dieselTank': 8000,
     'cash': 2000,
-    'pump1Nozzle1a': 10000,
-    'pump1Nozzle1b': 8000,
-    'pump2Nozzle2a': 10000,
-    'pump2Nozzle2b': 8000,
-    'analoguePump1Nozzle1a': 149.5,
-    'analoguePump1Nozzle1b': 119.8,
-    'analoguePump2Nozzle2a': 149.5,
-    'analoguePump2Nozzle2b': 119.8,
+    'pump1NozzleA': 10000, // Petrol
+    'pump1NozzleB': 8000, // Diesel
+    'pump2NozzleA': 10000, // Petrol
+    'pump2NozzleB': 8000, // Diesel
+    'analoguePump1NozzleA': 149.5,
+    'analoguePump1NozzleB': 119.8,
+    'analoguePump2NozzleA': 149.5,
+    'analoguePump2NozzleB': 119.8,
   };
 
   // Form Controllers for Closing Tank Levels
-  final TextEditingController _closingPetrolTankController = TextEditingController();
-  final TextEditingController _closingDieselTankController = TextEditingController();
+  final TextEditingController _closingPetrolTankController =
+      TextEditingController();
+  final TextEditingController _closingDieselTankController =
+      TextEditingController();
 
   // Form Controllers for Closing Cash
   final TextEditingController _closingCashController = TextEditingController();
 
-  // Form Controllers for Closing Digital Readings
-  final TextEditingController _closingPump1Nozzle1aController = TextEditingController();
-  final TextEditingController _closingPump1Nozzle1bController = TextEditingController();
-  final TextEditingController _closingPump2Nozzle2aController = TextEditingController();
-  final TextEditingController _closingPump2Nozzle2bController = TextEditingController();
-
-  // Form Controllers for Closing Analogue Readings
-  final TextEditingController _closingAnaloguePump1Nozzle1aController = TextEditingController();
-  final TextEditingController _closingAnaloguePump1Nozzle1bController = TextEditingController();
-  final TextEditingController _closingAnaloguePump2Nozzle2aController = TextEditingController();
-  final TextEditingController _closingAnaloguePump2Nozzle2bController = TextEditingController();
+  // Form Controllers for Selected Nozzle Readings
+  final TextEditingController _digitalReadingController =
+      TextEditingController();
+  final TextEditingController _analogueReadingController =
+      TextEditingController();
 
   // Online Payment Controller
-  final TextEditingController _onlinePaymentController = TextEditingController();
+  final TextEditingController _onlinePaymentController =
+      TextEditingController();
 
   // Fuel prices per liter
   final double _petrolPricePerLiter = 1.45;
@@ -86,11 +92,18 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.elasticOut,
+          ),
+        );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _cardAnimationController, curve: Curves.elasticOut),
+      CurvedAnimation(
+        parent: _cardAnimationController,
+        curve: Curves.elasticOut,
+      ),
     );
 
     _animationController.forward();
@@ -102,15 +115,9 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     _closingPetrolTankController.text = '7500';
     _closingDieselTankController.text = '5200';
     _closingCashController.text = '3850';
-    _closingPump1Nozzle1aController.text = '12450';
-    _closingPump1Nozzle1bController.text = '9780';
-    _closingPump2Nozzle2aController.text = '12680';
-    _closingPump2Nozzle2bController.text = '9560';
-    _closingAnaloguePump1Nozzle1aController.text = '187.2';
-    _closingAnaloguePump1Nozzle1bController.text = '143.6';
-    _closingAnaloguePump2Nozzle2aController.text = '189.8';
-    _closingAnaloguePump2Nozzle2bController.text = '141.2';
     _onlinePaymentController.text = '1250';
+    _digitalReadingController.text = '12450';
+    _analogueReadingController.text = '187.2';
   }
 
   void _addListeners() {
@@ -119,10 +126,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
       _closingPetrolTankController,
       _closingDieselTankController,
       _closingCashController,
-      _closingPump1Nozzle1aController,
-      _closingPump1Nozzle1bController,
-      _closingPump2Nozzle2aController,
-      _closingPump2Nozzle2bController,
+      _digitalReadingController,
       _onlinePaymentController,
     ];
 
@@ -135,41 +139,60 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     }
   }
 
-  // Calculate petrol sales in liters
-  double get _petrolSalesLiters {
-    double totalClosingPetrol = 0;
-    totalClosingPetrol += _parseDouble(_closingPump1Nozzle1aController.text);
-    totalClosingPetrol += _parseDouble(_closingPump2Nozzle2aController.text);
-
-    double totalOpeningPetrol = _openingValues['pump1Nozzle1a']! + _openingValues['pump2Nozzle2a']!;
-
-    return totalClosingPetrol - totalOpeningPetrol;
+  Color _getNozzleColor(String nozzle) {
+    switch (nozzle) {
+      case 'Pump 1 - Nozzle A':
+        return Colors.purple;
+      case 'Pump 1 - Nozzle B':
+        return Colors.purple.shade700;
+      case 'Pump 2 - Nozzle A':
+        return Colors.teal;
+      case 'Pump 2 - Nozzle B':
+        return Colors.teal.shade700;
+      default:
+        return Colors.grey;
+    }
   }
 
-  // Calculate diesel sales in liters
-  double get _dieselSalesLiters {
-    double totalClosingDiesel = 0;
-    totalClosingDiesel += _parseDouble(_closingPump1Nozzle1bController.text);
-    totalClosingDiesel += _parseDouble(_closingPump2Nozzle2bController.text);
-
-    double totalOpeningDiesel = _openingValues['pump1Nozzle1b']! + _openingValues['pump2Nozzle2b']!;
-
-    return totalClosingDiesel - totalOpeningDiesel;
+  String _getNozzleKey(String nozzle) {
+    switch (nozzle) {
+      case 'Pump 1 - Nozzle A':
+        return 'pump1NozzleA';
+      case 'Pump 1 - Nozzle B':
+        return 'pump1NozzleB';
+      case 'Pump 2 - Nozzle A':
+        return 'pump2NozzleA';
+      case 'Pump 2 - Nozzle B':
+        return 'pump2NozzleB';
+      default:
+        return '';
+    }
   }
 
-  // Calculate petrol sales amount
-  double get _petrolSalesAmount {
-    return _petrolSalesLiters * _petrolPricePerLiter;
+  bool _isNozzlePetrol(String nozzle) {
+    return nozzle.contains('Nozzle A'); // Assuming A is petrol, B is diesel
   }
 
-  // Calculate diesel sales amount
-  double get _dieselSalesAmount {
-    return _dieselSalesLiters * _dieselPricePerLiter;
+  // Calculate fuel sales for selected nozzle
+  double get _fuelSalesLiters {
+    if (_selectedNozzle == null) return 0.0;
+
+    double closingReading = _parseDouble(_digitalReadingController.text);
+    String nozzleKey = _getNozzleKey(_selectedNozzle!);
+    double openingReading = _openingValues[nozzleKey] ?? 0.0;
+
+    return closingReading - openingReading;
   }
 
-  // Calculate total fuel sales
-  double get _totalFuelSales {
-    return _petrolSalesAmount + _dieselSalesAmount;
+  // Calculate fuel sales amount for selected nozzle
+  double get _fuelSalesAmount {
+    if (_selectedNozzle == null) return 0.0;
+
+    double pricePerLiter = _isNozzlePetrol(_selectedNozzle!)
+        ? _petrolPricePerLiter
+        : _dieselPricePerLiter;
+
+    return _fuelSalesLiters * pricePerLiter;
   }
 
   // Calculate cash sales
@@ -195,13 +218,14 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
 
   Future<void> _pickImage() async {
     if (_selectedImage != null) {
-      // Show confirmation dialog to replace existing image
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text('Replace Image'),
-            content: Text('You can only upload one image. Do you want to replace the current image?'),
+            content: Text(
+              'You can only upload one image. Do you want to replace the current image?',
+            ),
             actions: [
               TextButton(
                 child: Text('Cancel'),
@@ -244,7 +268,31 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     });
   }
 
+  bool _isFormValid() {
+    return _selectedNozzle != null &&
+        _closingPetrolTankController.text.isNotEmpty &&
+        _closingDieselTankController.text.isNotEmpty &&
+        _closingCashController.text.isNotEmpty &&
+        _digitalReadingController.text.isNotEmpty &&
+        _analogueReadingController.text.isNotEmpty &&
+        _onlinePaymentController.text.isNotEmpty;
+  }
+
   Future<void> _submitForm() async {
+    if (!_isFormValid()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please fill all required fields and select a nozzle'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -259,7 +307,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Shift closed successfully!'),
+        content: Text('Shift closed successfully for $_selectedNozzle!'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -314,15 +362,19 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
                     _buildHeader(),
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        padding: EdgeInsets.symmetric(horizontal: 10.w),
                         child: Column(
                           children: [
                             SizedBox(height: 20.h),
-                            _buildClosingSection(),
+                            _buildNozzleSelectionCard(),
                             SizedBox(height: 24.h),
-                            _buildCalculationsSection(),
-                            SizedBox(height: 24.h),
-                            _buildSubmitButton(),
+                            if (_selectedNozzle != null) ...[
+                              _buildClosingSection(),
+                              SizedBox(height: 24.h),
+                              _buildCalculationsSection(),
+                              SizedBox(height: 24.h),
+                              _buildSubmitButton(),
+                            ],
                             SizedBox(height: 20.h),
                           ],
                         ),
@@ -368,7 +420,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
           ),
           SizedBox(width: 16.w),
           Text(
-            'Close Shift',
+            'Close Your Shift',
             style: TextStyle(
               fontSize: 24.sp,
               fontWeight: FontWeight.w800,
@@ -381,7 +433,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     );
   }
 
-  Widget _buildClosingSection() {
+  Widget _buildNozzleSelectionCard() {
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Container(
@@ -389,18 +441,206 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.white,
-              Colors.white.withOpacity(0.95),
-            ],
+            colors: [Colors.white, Colors.white.withOpacity(0.95)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(24.r),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-            width: 1,
+          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.15),
+              offset: Offset(0, 12.h),
+              blurRadius: 30.r,
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              offset: Offset(0, 4.h),
+              blurRadius: 15.r,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Icon(
+                    Icons.stop_circle,
+                    color: Colors.red,
+                    size: 20.sp,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select Your Nozzle',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Choose the nozzle you operated during shift',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 20.h),
+
+            // Nozzle Selection Grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12.w,
+                mainAxisSpacing: 12.h,
+                childAspectRatio: 2.5,
+              ),
+              itemCount: _nozzleOptions.length,
+              itemBuilder: (context, index) {
+                final nozzle = _nozzleOptions[index];
+                final isSelected = _selectedNozzle == nozzle;
+                final nozzleColor = _getNozzleColor(nozzle);
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedNozzle = nozzle;
+                      // Clear previous readings when switching nozzles
+                      _digitalReadingController.clear();
+                      _analogueReadingController.clear();
+                      // Reset with example values for demo
+                      _digitalReadingController.text = '12450';
+                      _analogueReadingController.text = '187.2';
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? nozzleColor.withOpacity(0.1)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isSelected ? nozzleColor : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: nozzleColor.withOpacity(0.2),
+                                offset: Offset(0, 4.h),
+                                blurRadius: 12.r,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isSelected
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                          color: isSelected
+                              ? nozzleColor
+                              : Colors.grey.shade500,
+                          size: 20.sp,
+                        ),
+                        SizedBox(height: 6.h),
+                        Text(
+                          nozzle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            color: isSelected
+                                ? nozzleColor
+                                : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            if (_selectedNozzle != null) ...[
+              SizedBox(height: 16.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: _getNozzleColor(_selectedNozzle!).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: _getNozzleColor(_selectedNozzle!).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: _getNozzleColor(_selectedNozzle!),
+                      size: 18.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'Selected: $_selectedNozzle',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: _getNozzleColor(_selectedNozzle!),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClosingSection() {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(15.w),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.white.withOpacity(0.95)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.primary.withOpacity(0.1),
@@ -420,7 +660,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Closing (End of Shift)',
+              'Shift Closing Details',
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w700,
@@ -485,92 +725,30 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
 
             SizedBox(height: 24.h),
 
-            // Digital Meter Readings Section
+            // Selected Nozzle Readings Section
             _buildSectionCard(
-              title: 'Digital Meter Readings',
+              title: '$_selectedNozzle Readings',
               icon: Icons.speed,
-              subtitle: 'Record closing digital readings',
+              subtitle: 'Record closing readings for your selected nozzle',
               children: [
                 _buildInputField(
-                  controller: _closingPump1Nozzle1aController,
-                  label: 'Pump 1 - Nozzle A (Petrol)',
+                  controller: _digitalReadingController,
+                  label: 'Digital Reading',
                   hint: '0.00',
                   suffix: 'L',
                   icon: Icons.speed,
-                  color: Colors.purple,
+                  color: _getNozzleColor(_selectedNozzle!),
+                  keyboardType: TextInputType.number,
                 ),
                 SizedBox(height: 16.h),
                 _buildInputField(
-                  controller: _closingPump1Nozzle1bController,
-                  label: 'Pump 1 - Nozzle B (Diesel)',
-                  hint: '0.00',
-                  suffix: 'L',
-                  icon: Icons.speed,
-                  color: Colors.purple,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _closingPump2Nozzle2aController,
-                  label: 'Pump 2 - Nozzle A (Petrol)',
-                  hint: '0.00',
-                  suffix: 'L',
-                  icon: Icons.speed,
-                  color: Colors.teal,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _closingPump2Nozzle2bController,
-                  label: 'Pump 2 - Nozzle B (Diesel)',
-                  hint: '0.00',
-                  suffix: 'L',
-                  icon: Icons.speed,
-                  color: Colors.teal,
-                ),
-              ],
-            ),
-
-            SizedBox(height: 24.h),
-
-            // Analogue Readings Section
-            _buildSectionCard(
-              title: 'Analogue Meter Readings',
-              icon: Icons.analytics,
-              subtitle: 'Record closing analogue readings',
-              children: [
-                _buildInputField(
-                  controller: _closingAnaloguePump1Nozzle1aController,
-                  label: 'Pump 1 - Nozzle A',
+                  controller: _analogueReadingController,
+                  label: 'Analogue Reading',
                   hint: '0.0',
                   suffix: 'V',
                   icon: Icons.analytics_outlined,
-                  color: Colors.red,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _closingAnaloguePump1Nozzle1bController,
-                  label: 'Pump 1 - Nozzle B',
-                  hint: '0.0',
-                  suffix: 'V',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.red,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _closingAnaloguePump2Nozzle2aController,
-                  label: 'Pump 2 - Nozzle A',
-                  hint: '0.0',
-                  suffix: 'V',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.indigo,
-                ),
-                SizedBox(height: 16.h),
-                _buildInputField(
-                  controller: _closingAnaloguePump2Nozzle2bController,
-                  label: 'Pump 2 - Nozzle B',
-                  hint: '0.0',
-                  suffix: 'V',
-                  icon: Icons.analytics_outlined,
-                  color: Colors.indigo,
+                  color: _getNozzleColor(_selectedNozzle!),
+                  keyboardType: TextInputType.number,
                 ),
               ],
             ),
@@ -582,9 +760,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
               title: 'Shift Summary Photo',
               icon: Icons.camera_alt,
               subtitle: 'Upload one photo of shift summary (optional)',
-              children: [
-                _buildImageUploadSection(),
-              ],
+              children: [_buildImageUploadSection()],
             ),
           ],
         ),
@@ -605,10 +781,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,11 +794,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10.r),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppColors.primary,
-                  size: 20.sp,
-                ),
+                child: Icon(icon, color: AppColors.primary, size: 20.sp),
               ),
               SizedBox(width: 12.w),
               Expanded(
@@ -691,10 +860,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(
-              color: Colors.grey.shade300,
-              width: 1.5,
-            ),
+            border: Border.all(color: Colors.grey.shade300, width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: color.withOpacity(0.1),
@@ -725,11 +891,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
-                child: Icon(
-                  icon,
-                  size: 18.sp,
-                  color: color,
-                ),
+                child: Icon(icon, size: 18.sp, color: color),
               ),
               prefixText: prefix,
               suffixText: suffix,
@@ -749,10 +911,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12.r),
-                borderSide: BorderSide(
-                  color: color,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: color, width: 2),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16.w,
@@ -792,11 +951,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.camera_alt,
-              size: 32.sp,
-              color: Colors.grey.shade600,
-            ),
+            Icon(Icons.camera_alt, size: 32.sp, color: Colors.grey.shade600),
             SizedBox(height: 8.h),
             Text(
               'Take Photo',
@@ -827,10 +982,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Stack(
         children: [
@@ -854,11 +1006,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
                   color: Colors.red.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(20.r),
                 ),
-                child: Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 18.sp,
-                ),
+                child: Icon(Icons.close, color: Colors.white, size: 18.sp),
               ),
             ),
           ),
@@ -892,18 +1040,12 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
       padding: EdgeInsets.all(24.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.green.shade50,
-            Colors.green.shade50,
-          ],
+          colors: [Colors.green.shade50, Colors.green.shade50],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(
-          color: Colors.green.withOpacity(0.2),
-          width: 2,
-        ),
+        border: Border.all(color: Colors.green.withOpacity(0.2), width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.green.withOpacity(0.1),
@@ -917,11 +1059,7 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.calculate,
-                color: Colors.green,
-                size: 24.sp,
-              ),
+              Icon(Icons.calculate, color: Colors.green, size: 24.sp),
               SizedBox(width: 12.w),
               Text(
                 'Sales Summary',
@@ -935,16 +1073,19 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
           ),
           SizedBox(height: 24.h),
 
-          // Fuel Sales
+          // Selected Nozzle Sales
           _buildSummaryCard(
-            title: 'Fuel Sales',
+            title: '$_selectedNozzle Sales',
             icon: Icons.local_gas_station,
-            color: Colors.blue,
+            color: _getNozzleColor(_selectedNozzle!),
             items: [
-              _buildSummaryItem('Petrol Sales', '${_petrolSalesLiters.toStringAsFixed(1)} L', '₹${_petrolSalesAmount.toStringAsFixed(2)}'),
-              _buildSummaryItem('Diesel Sales', '${_dieselSalesLiters.toStringAsFixed(1)} L', '₹${_dieselSalesAmount.toStringAsFixed(2)}'),
-              Divider(color: Colors.grey.shade300),
-              _buildSummaryItem('Total Fuel Sales', '', '₹${_totalFuelSales.toStringAsFixed(2)}', isTotal: true),
+              _buildSummaryItem(
+                _isNozzlePetrol(_selectedNozzle!)
+                    ? 'Petrol Sales'
+                    : 'Diesel Sales',
+                '${_fuelSalesLiters.toStringAsFixed(1)} L',
+                '₹${_fuelSalesAmount.toStringAsFixed(2)}',
+              ),
             ],
           ),
 
@@ -956,10 +1097,23 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
             icon: Icons.payments,
             color: Colors.orange,
             items: [
-              _buildSummaryItem('Cash Sales', '', '₹${_cashSales.toStringAsFixed(2)}'),
-              _buildSummaryItem('Online Payments', '', '₹${_onlinePayments.toStringAsFixed(2)}'),
+              _buildSummaryItem(
+                'Cash Sales',
+                '',
+                '₹${_cashSales.toStringAsFixed(2)}',
+              ),
+              _buildSummaryItem(
+                'Online Payments',
+                '',
+                '₹${_onlinePayments.toStringAsFixed(2)}',
+              ),
               Divider(color: Colors.grey.shade300),
-              _buildSummaryItem('Total Payments', '', '₹${_totalPayments.toStringAsFixed(2)}', isTotal: true),
+              _buildSummaryItem(
+                'Total Payments',
+                '',
+                '₹${_totalPayments.toStringAsFixed(2)}',
+                isTotal: true,
+              ),
             ],
           ),
 
@@ -969,12 +1123,12 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: _totalFuelSales == _totalPayments
+              color: _fuelSalesAmount == _totalPayments
                   ? Colors.green.withOpacity(0.1)
                   : Colors.orange.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
-                color: _totalFuelSales == _totalPayments
+                color: _fuelSalesAmount == _totalPayments
                     ? Colors.green
                     : Colors.orange,
                 width: 1,
@@ -983,10 +1137,10 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
             child: Row(
               children: [
                 Icon(
-                  _totalFuelSales == _totalPayments
+                  _fuelSalesAmount == _totalPayments
                       ? Icons.check_circle
                       : Icons.warning,
-                  color: _totalFuelSales == _totalPayments
+                  color: _fuelSalesAmount == _totalPayments
                       ? Colors.green
                       : Colors.orange,
                   size: 24.sp,
@@ -1005,12 +1159,12 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
                         ),
                       ),
                       Text(
-                        _totalFuelSales == _totalPayments
+                        _fuelSalesAmount == _totalPayments
                             ? 'Sales and payments match perfectly!'
-                            : 'Variance: ₹${(_totalFuelSales - _totalPayments).abs().toStringAsFixed(2)}',
+                            : 'Variance: ₹${(_fuelSalesAmount - _totalPayments).abs().toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 14.sp,
-                          color: _totalFuelSales == _totalPayments
+                          color: _fuelSalesAmount == _totalPayments
                               ? Colors.green
                               : Colors.orange,
                           fontWeight: FontWeight.w600,
@@ -1077,7 +1231,12 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     );
   }
 
-  Widget _buildSummaryItem(String label, String quantity, String amount, {bool isTotal = false}) {
+  Widget _buildSummaryItem(
+    String label,
+    String quantity,
+    String amount, {
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
@@ -1109,7 +1268,9 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
                 style: TextStyle(
                   fontSize: isTotal ? 16.sp : 14.sp,
                   fontWeight: FontWeight.w700,
-                  color: isTotal ? Colors.green.shade700 : AppColors.textPrimary,
+                  color: isTotal
+                      ? Colors.green.shade700
+                      : AppColors.textPrimary,
                 ),
               ),
             ],
@@ -1147,46 +1308,46 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
             alignment: Alignment.center,
             child: _isLoading
                 ? Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 20.w,
-                  height: 20.h,
-                  child: const CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2.5,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Text(
-                  'Closing Shift...',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            )
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20.w,
+                        height: 20.h,
+                        child: const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        'Closing Shift...',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  )
                 : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.stop_circle_outlined,
-                  color: Colors.white,
-                  size: 24.sp,
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  'Close Shift',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.stop_circle_outlined,
+                        color: Colors.white,
+                        size: 24.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        'Close Shift for $_selectedNozzle',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -1202,14 +1363,8 @@ class _ShiftCloseScreenState extends State<ShiftCloseScreen>
     _closingPetrolTankController.dispose();
     _closingDieselTankController.dispose();
     _closingCashController.dispose();
-    _closingPump1Nozzle1aController.dispose();
-    _closingPump1Nozzle1bController.dispose();
-    _closingPump2Nozzle2aController.dispose();
-    _closingPump2Nozzle2bController.dispose();
-    _closingAnaloguePump1Nozzle1aController.dispose();
-    _closingAnaloguePump1Nozzle1bController.dispose();
-    _closingAnaloguePump2Nozzle2aController.dispose();
-    _closingAnaloguePump2Nozzle2bController.dispose();
+    _digitalReadingController.dispose();
+    _analogueReadingController.dispose();
     _onlinePaymentController.dispose();
 
     super.dispose();
